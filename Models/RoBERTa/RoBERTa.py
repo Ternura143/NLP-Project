@@ -84,11 +84,22 @@ if __name__ == '__main__':
     train_dataset = SarcasmDataset(train_encodings, train_labels)
     test_dataset = SarcasmDataset(test_encodings, test_labels)
 
+
     training_args = TrainingArguments(
-        output_dir='./res', evaluation_strategy="steps", num_train_epochs=5, per_device_train_batch_size=32,
-        per_device_eval_batch_size=64, warmup_steps=500, weight_decay=0.01,logging_dir='./logs4',
-        load_best_model_at_end=True,
+    output_dir='./res', 
+    evaluation_strategy="epoch",   # 评估方式改为 "epoch"
+    logging_strategy="epoch",      # 让日志也按照 epoch 记录
+    save_strategy="epoch",         # 确保模型保存也是按 epoch
+    num_train_epochs=5,
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=64,
+    warmup_steps=500, 
+    weight_decay=0.01,
+    logging_dir='./logs4',
+    load_best_model_at_end=True,
+    report_to="none",
     )
+
 
     model = AutoModelForSequenceClassification.from_pretrained(MODEL)
 
@@ -103,3 +114,17 @@ if __name__ == '__main__':
     trainer.train()
 
     trainer.evaluate()
+
+    # ========== 评估模型 ==========
+    test_results = trainer.evaluate()
+
+    # 打印最终的 Accuracy 和 F1 Score
+    print(f"\n Final Test Accuracy: {test_results['eval_accuracy']:.3f}")
+    print(f" Final Test F1 Score: {test_results['eval_f1_score']:.3f}")
+
+
+    predictions = trainer.predict(test_dataset)
+    preds = np.argmax(predictions.predictions, axis=1)
+
+    print("\n Classification Report:")
+    print(classification_report(test_labels, preds))
